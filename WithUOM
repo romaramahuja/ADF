@@ -5,11 +5,11 @@
         "factoryName": {
             "type": "string",
             "metadata": "Data Factory name",
-            "defaultValue": "lyb-adf-devda-otit-test"
+            "defaultValue": "romatest"
         },
-        "AzureBlobStorage1_connectionString": {
-            "type": "secureString",
-            "metadata": "Secure string for 'connectionString' of 'AzureBlobStorage1'"
+        "UoMUpload-trigger_properties_typeProperties_scope": {
+            "type": "string",
+            "defaultValue": "/subscriptions/a72d371a-46b3-4366-b3ee-6d47368a19be/resourceGroups/lyb-rg/providers/Microsoft.Storage/storageAccounts/lybdlsdevdacore1"
         },
         "AzureDataExplorer1_properties_typeProperties_endpoint": {
             "type": "string",
@@ -18,14 +18,6 @@
         "AzureDataExplorer1_properties_typeProperties_database": {
             "type": "string",
             "defaultValue": "SiteTelemetry"
-        },
-        "UoMUpload-trigger_properties_UoMListUpload_parameters_file_name": {
-            "type": "string",
-            "defaultValue": "@triggerBody().fileName"
-        },
-        "UoMUpload-trigger_properties_typeProperties_scope": {
-            "type": "string",
-            "defaultValue": "/subscriptions/a72d371a-46b3-4366-b3ee-6d47368a19be/resourceGroups/lyb-rg/providers/Microsoft.Storage/storageAccounts/lybdlsdevdacore1"
         }
     },
     "variables": {
@@ -33,119 +25,151 @@
     },
     "resources": [
         {
-            "name": "[concat(parameters('factoryName'), '/AzureDataExplorer1')]",
-            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "name": "[concat(parameters('factoryName'), '/Metadata-trigger')]",
+            "type": "Microsoft.DataFactory/factories/triggers",
             "apiVersion": "2018-06-01",
             "properties": {
+                "description": "Captures Metadata Change Log, once per day.",
                 "annotations": [],
-                "type": "AzureDataExplorer",
-                "typeProperties": {
-                    "endpoint": "[parameters('AzureDataExplorer1_properties_typeProperties_endpoint')]",
-                    "database": "[parameters('AzureDataExplorer1_properties_typeProperties_database')]"
-                }
-            },
-            "dependsOn": []
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/AzureBlobStorage1')]",
-            "type": "Microsoft.DataFactory/factories/linkedServices",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "annotations": [],
-                "type": "AzureBlobStorage",
-                "typeProperties": {
-                    "connectionString": "[parameters('AzureBlobStorage1_connectionString')]"
-                }
-            },
-            "dependsOn": []
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/AzureDataExplorerTable1')]",
-            "type": "Microsoft.DataFactory/factories/datasets",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "linkedServiceName": {
-                    "referenceName": "AzureDataExplorer1",
-                    "type": "LinkedServiceReference"
-                },
-                "annotations": [],
-                "type": "AzureDataExplorerTable",
-                "schema": [
+                "runtimeState": "Stopped",
+                "pipelines": [
                     {
-                        "name": "Units",
-                        "type": "string"
-                    },
-                    {
-                        "name": "Category",
-                        "type": "string"
-                    },
-                    {
-                        "name": "SubCategory",
-                        "type": "string"
-                    },
-                    {
-                        "name": "SiUnit",
-                        "type": "string"
-                    },
-                    {
-                        "name": "NormalizedUnit",
-                        "type": "string"
-                    },
-                    {
-                        "name": "CoeffA",
-                        "type": "real"
-                    },
-                    {
-                        "name": "CoeffB",
-                        "type": "real"
+                        "pipelineReference": {
+                            "referenceName": "MetadataChangeLog",
+                            "type": "PipelineReference"
+                        },
+                        "parameters": {}
                     }
                 ],
+                "type": "ScheduleTrigger",
                 "typeProperties": {
-                    "table": "dUoMListBackup"
+                    "recurrence": {
+                        "frequency": "Day",
+                        "interval": 1,
+                        "startTime": "2024-04-24T08:04:00",
+                        "timeZone": "Eastern Standard Time",
+                        "schedule": {}
+                    }
                 }
             },
             "dependsOn": [
-                "[concat(variables('factoryId'), '/linkedServices/AzureDataExplorer1')]"
+                "[concat(variables('factoryId'), '/pipelines/MetadataChangeLog')]"
             ]
         },
         {
-            "name": "[concat(parameters('factoryName'), '/DelimitedText1')]",
-            "type": "Microsoft.DataFactory/factories/datasets",
+            "name": "[concat(parameters('factoryName'), '/TelemetryAggr15mTrigger')]",
+            "type": "Microsoft.DataFactory/factories/triggers",
             "apiVersion": "2018-06-01",
             "properties": {
-                "linkedServiceName": {
-                    "referenceName": "AzureBlobStorage1",
-                    "type": "LinkedServiceReference"
-                },
-                "parameters": {
-                    "file_name_ds": {
-                        "type": "string"
-                    }
-                },
                 "annotations": [],
-                "type": "DelimitedText",
-                "typeProperties": {
-                    "location": {
-                        "type": "AzureBlobStorageLocation",
-                        "fileName": {
-                            "value": "@dataset().file_name_ds",
-                            "type": "Expression"
+                "runtimeState": "Stopped",
+                "pipelines": [
+                    {
+                        "pipelineReference": {
+                            "referenceName": "TelemetryAggr15mTrigger",
+                            "type": "PipelineReference"
                         },
-                        "container": "site-all"
-                    },
-                    "columnDelimiter": ",",
-                    "escapeChar": "\\",
-                    "firstRowAsHeader": true,
-                    "quoteChar": "\""
-                },
-                "schema": []
+                        "parameters": {}
+                    }
+                ],
+                "type": "ScheduleTrigger",
+                "typeProperties": {
+                    "recurrence": {
+                        "frequency": "Minute",
+                        "interval": 15,
+                        "startTime": "2024-04-24T08:37:00",
+                        "timeZone": "Eastern Standard Time"
+                    }
+                }
             },
             "dependsOn": [
-                "[concat(variables('factoryId'), '/linkedServices/AzureBlobStorage1')]"
+                "[concat(variables('factoryId'), '/pipelines/TelemetryAggr15mTrigger')]"
             ]
         },
         {
-            "name": "[concat(parameters('factoryName'), '/LybQaQ')]",
+            "name": "[concat(parameters('factoryName'), '/TelemetryAggr1hTrigger')]",
+            "type": "Microsoft.DataFactory/factories/triggers",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "runtimeState": "Stopped",
+                "pipelines": [
+                    {
+                        "pipelineReference": {
+                            "referenceName": "TelemetryAggr1hTrigger",
+                            "type": "PipelineReference"
+                        },
+                        "parameters": {}
+                    }
+                ],
+                "type": "ScheduleTrigger",
+                "typeProperties": {
+                    "recurrence": {
+                        "frequency": "Hour",
+                        "interval": 1,
+                        "startTime": "2024-04-24T08:36:00",
+                        "timeZone": "Eastern Standard Time"
+                    }
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/pipelines/TelemetryAggr1hTrigger')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/UoMUpload-trigger')]",
+            "type": "Microsoft.DataFactory/factories/triggers",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "runtimeState": "Stopped",
+                "pipelines": [],
+                "type": "BlobEventsTrigger",
+                "typeProperties": {
+                    "blobPathBeginsWith": "/site-all/blobs/dUoMList",
+                    "blobPathEndsWith": ".csv",
+                    "ignoreEmptyBlobs": true,
+                    "scope": "[parameters('UoMUpload-trigger_properties_typeProperties_scope')]",
+                    "events": [
+                        "Microsoft.Storage.BlobCreated"
+                    ]
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/QA-trigger')]",
+            "type": "Microsoft.DataFactory/factories/triggers",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "description": "Triggers, Quality Rules in every 5 mins",
+                "annotations": [],
+                "runtimeState": "Stopped",
+                "pipelines": [
+                    {
+                        "pipelineReference": {
+                            "referenceName": "acnlyb-dev-adx-qarules",
+                            "type": "PipelineReference"
+                        },
+                        "parameters": {}
+                    }
+                ],
+                "type": "ScheduleTrigger",
+                "typeProperties": {
+                    "recurrence": {
+                        "frequency": "Minute",
+                        "interval": 5,
+                        "startTime": "2024-04-24T08:02:00",
+                        "timeZone": "Eastern Standard Time"
+                    }
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/pipelines/acnlyb-dev-adx-qarules')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/MetadataChangeLog')]",
             "type": "Microsoft.DataFactory/factories/pipelines",
             "apiVersion": "2018-06-01",
             "properties": {
@@ -163,7 +187,7 @@
                         },
                         "userProperties": [],
                         "typeProperties": {
-                            "command": ".set-or-append async dQAResults <| fnRuleExecQaQ(5m)",
+                            "command": ".set-or-append async fMetadataChangeLog <| fnGetMetadataChangeLog()",
                             "commandTimeout": "00:20:00"
                         },
                         "linkedServiceName": {
@@ -179,14 +203,14 @@
                     "name": "OT_IT"
                 },
                 "annotations": [],
-                "lastPublishTime": "2024-04-24T13:14:08Z"
+                "lastPublishTime": "2024-04-24T13:18:50Z"
             },
             "dependsOn": [
                 "[concat(variables('factoryId'), '/linkedServices/AzureDataExplorer1')]"
             ]
         },
         {
-            "name": "[concat(parameters('factoryName'), '/LybQaUoM')]",
+            "name": "[concat(parameters('factoryName'), '/TelemetryAggr15mTrigger')]",
             "type": "Microsoft.DataFactory/factories/pipelines",
             "apiVersion": "2018-06-01",
             "properties": {
@@ -204,7 +228,7 @@
                         },
                         "userProperties": [],
                         "typeProperties": {
-                            "command": ".set-or-append async dQAResults <| fnRuleExecQaUoM(5m)",
+                            "command": ".set-or-append async fTelemetryAggr15m <| \n   fnGetAggregates(15m)",
                             "commandTimeout": "00:20:00"
                         },
                         "linkedServiceName": {
@@ -220,7 +244,48 @@
                     "name": "OT_IT"
                 },
                 "annotations": [],
-                "lastPublishTime": "2024-04-24T13:14:07Z"
+                "lastPublishTime": "2024-04-24T13:18:50Z"
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/AzureDataExplorer1')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/TelemetryAggr1hTrigger')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "Azure Data Explorer Command1",
+                        "type": "AzureDataExplorerCommand",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "0.12:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "command": ".set-or-append async fTelemetryAggr1h <| \n   fnGetAggregates(1h)",
+                            "commandTimeout": "00:20:00"
+                        },
+                        "linkedServiceName": {
+                            "referenceName": "AzureDataExplorer1",
+                            "type": "LinkedServiceReference"
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "folder": {
+                    "name": "OT_IT"
+                },
+                "annotations": [],
+                "lastPublishTime": "2024-04-24T13:18:50Z"
             },
             "dependsOn": [
                 "[concat(variables('factoryId'), '/linkedServices/AzureDataExplorer1')]"
@@ -261,7 +326,89 @@
                     "name": "OT_IT"
                 },
                 "annotations": [],
-                "lastPublishTime": "2024-04-24T13:14:08Z"
+                "lastPublishTime": "2024-04-24T13:18:50Z"
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/AzureDataExplorer1')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/LybQaUoM')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "Azure Data Explorer Command1",
+                        "type": "AzureDataExplorerCommand",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "0.12:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "command": ".set-or-append async dQAResults <| fnRuleExecQaUoM(5m)",
+                            "commandTimeout": "00:20:00"
+                        },
+                        "linkedServiceName": {
+                            "referenceName": "AzureDataExplorer1",
+                            "type": "LinkedServiceReference"
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "folder": {
+                    "name": "OT_IT"
+                },
+                "annotations": [],
+                "lastPublishTime": "2024-04-24T13:18:50Z"
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/AzureDataExplorer1')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/LybQaQ')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "Azure Data Explorer Command1",
+                        "type": "AzureDataExplorerCommand",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "0.12:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "command": ".set-or-append async dQAResults <| fnRuleExecQaQ(5m)",
+                            "commandTimeout": "00:20:00"
+                        },
+                        "linkedServiceName": {
+                            "referenceName": "AzureDataExplorer1",
+                            "type": "LinkedServiceReference"
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "folder": {
+                    "name": "OT_IT"
+                },
+                "annotations": [],
+                "lastPublishTime": "2024-04-24T13:18:50Z"
             },
             "dependsOn": [
                 "[concat(variables('factoryId'), '/linkedServices/AzureDataExplorer1')]"
@@ -332,7 +479,7 @@
                     "name": "OT_IT"
                 },
                 "annotations": [],
-                "lastPublishTime": "2024-04-24T13:14:08Z"
+                "lastPublishTime": "2024-04-24T13:18:51Z"
             },
             "dependsOn": [
                 "[concat(variables('factoryId'), '/pipelines/LybQaQ')]",
@@ -341,458 +488,18 @@
             ]
         },
         {
-            "name": "[concat(parameters('factoryName'), '/MetadataChangeLog')]",
-            "type": "Microsoft.DataFactory/factories/pipelines",
+            "name": "[concat(parameters('factoryName'), '/AzureDataExplorer1')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
             "apiVersion": "2018-06-01",
             "properties": {
-                "activities": [
-                    {
-                        "name": "Azure Data Explorer Command1",
-                        "type": "AzureDataExplorerCommand",
-                        "dependsOn": [],
-                        "policy": {
-                            "timeout": "0.12:00:00",
-                            "retry": 0,
-                            "retryIntervalInSeconds": 30,
-                            "secureOutput": false,
-                            "secureInput": false
-                        },
-                        "userProperties": [],
-                        "typeProperties": {
-                            "command": ".set-or-append async fMetadataChangeLog <| fnGetMetadataChangeLog()",
-                            "commandTimeout": "00:20:00"
-                        },
-                        "linkedServiceName": {
-                            "referenceName": "AzureDataExplorer1",
-                            "type": "LinkedServiceReference"
-                        }
-                    }
-                ],
-                "policy": {
-                    "elapsedTimeMetric": {}
-                },
-                "folder": {
-                    "name": "OT_IT"
-                },
                 "annotations": [],
-                "lastPublishTime": "2024-04-24T13:14:08Z"
-            },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/linkedServices/AzureDataExplorer1')]"
-            ]
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/TelemetryAggr1hTrigger')]",
-            "type": "Microsoft.DataFactory/factories/pipelines",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "activities": [
-                    {
-                        "name": "Azure Data Explorer Command1",
-                        "type": "AzureDataExplorerCommand",
-                        "dependsOn": [],
-                        "policy": {
-                            "timeout": "0.12:00:00",
-                            "retry": 0,
-                            "retryIntervalInSeconds": 30,
-                            "secureOutput": false,
-                            "secureInput": false
-                        },
-                        "userProperties": [],
-                        "typeProperties": {
-                            "command": ".set-or-append async fTelemetryAggr1h <| \n   fnGetAggregates(1h)",
-                            "commandTimeout": "00:20:00"
-                        },
-                        "linkedServiceName": {
-                            "referenceName": "AzureDataExplorer1",
-                            "type": "LinkedServiceReference"
-                        }
-                    }
-                ],
-                "policy": {
-                    "elapsedTimeMetric": {}
-                },
-                "folder": {
-                    "name": "OT_IT"
-                },
-                "annotations": [],
-                "lastPublishTime": "2024-04-24T13:14:07Z"
-            },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/linkedServices/AzureDataExplorer1')]"
-            ]
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/TelemetryAggr15mTrigger')]",
-            "type": "Microsoft.DataFactory/factories/pipelines",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "activities": [
-                    {
-                        "name": "Azure Data Explorer Command1",
-                        "type": "AzureDataExplorerCommand",
-                        "dependsOn": [],
-                        "policy": {
-                            "timeout": "0.12:00:00",
-                            "retry": 0,
-                            "retryIntervalInSeconds": 30,
-                            "secureOutput": false,
-                            "secureInput": false
-                        },
-                        "userProperties": [],
-                        "typeProperties": {
-                            "command": ".set-or-append async fTelemetryAggr15m <| \n   fnGetAggregates(15m)",
-                            "commandTimeout": "00:20:00"
-                        },
-                        "linkedServiceName": {
-                            "referenceName": "AzureDataExplorer1",
-                            "type": "LinkedServiceReference"
-                        }
-                    }
-                ],
-                "policy": {
-                    "elapsedTimeMetric": {}
-                },
-                "folder": {
-                    "name": "OT_IT"
-                },
-                "annotations": [],
-                "lastPublishTime": "2024-04-24T13:14:08Z"
-            },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/linkedServices/AzureDataExplorer1')]"
-            ]
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/RecoverUoMList')]",
-            "type": "Microsoft.DataFactory/factories/pipelines",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "activities": [
-                    {
-                        "name": "Azure Data Explorer Command1",
-                        "type": "AzureDataExplorerCommand",
-                        "dependsOn": [],
-                        "policy": {
-                            "timeout": "0.12:00:00",
-                            "retry": 0,
-                            "retryIntervalInSeconds": 30,
-                            "secureOutput": false,
-                            "secureInput": false
-                        },
-                        "userProperties": [],
-                        "typeProperties": {
-                            "command": ".rename tables dUoMListBackup=dUoMList ifexists, dUoMList=dUoMListBackup",
-                            "commandTimeout": "00:20:00"
-                        },
-                        "linkedServiceName": {
-                            "referenceName": "AzureDataExplorer1",
-                            "type": "LinkedServiceReference"
-                        }
-                    }
-                ],
-                "policy": {
-                    "elapsedTimeMetric": {}
-                },
-                "folder": {
-                    "name": "OT_IT"
-                },
-                "annotations": [],
-                "lastPublishTime": "2024-04-24T13:14:08Z"
-            },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/linkedServices/AzureDataExplorer1')]"
-            ]
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/UoMListUpload')]",
-            "type": "Microsoft.DataFactory/factories/pipelines",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "activities": [
-                    {
-                        "name": "Azure Data Explorer Command1",
-                        "type": "AzureDataExplorerCommand",
-                        "dependsOn": [],
-                        "policy": {
-                            "timeout": "0.12:00:00",
-                            "retry": 0,
-                            "retryIntervalInSeconds": 30,
-                            "secureOutput": false,
-                            "secureInput": false
-                        },
-                        "userProperties": [],
-                        "typeProperties": {
-                            "command": ".clear table dUoMListBackup data",
-                            "commandTimeout": "00:20:00"
-                        },
-                        "linkedServiceName": {
-                            "referenceName": "AzureDataExplorer1",
-                            "type": "LinkedServiceReference"
-                        }
-                    },
-                    {
-                        "name": "RecoverUoMList",
-                        "type": "ExecutePipeline",
-                        "dependsOn": [
-                            {
-                                "activity": "Copy data1",
-                                "dependencyConditions": [
-                                    "Succeeded"
-                                ]
-                            }
-                        ],
-                        "policy": {
-                            "secureInput": false
-                        },
-                        "userProperties": [],
-                        "typeProperties": {
-                            "pipeline": {
-                                "referenceName": "RecoverUoMList",
-                                "type": "PipelineReference"
-                            },
-                            "waitOnCompletion": true,
-                            "parameters": {}
-                        }
-                    },
-                    {
-                        "name": "Copy data1",
-                        "type": "Copy",
-                        "dependsOn": [
-                            {
-                                "activity": "Azure Data Explorer Command1",
-                                "dependencyConditions": [
-                                    "Succeeded"
-                                ]
-                            }
-                        ],
-                        "policy": {
-                            "timeout": "0.12:00:00",
-                            "retry": 0,
-                            "retryIntervalInSeconds": 30,
-                            "secureOutput": false,
-                            "secureInput": false
-                        },
-                        "userProperties": [],
-                        "typeProperties": {
-                            "source": {
-                                "type": "DelimitedTextSource",
-                                "storeSettings": {
-                                    "type": "AzureBlobStorageReadSettings",
-                                    "recursive": true,
-                                    "enablePartitionDiscovery": false
-                                },
-                                "formatSettings": {
-                                    "type": "DelimitedTextReadSettings"
-                                }
-                            },
-                            "sink": {
-                                "type": "AzureDataExplorerSink"
-                            },
-                            "enableStaging": false,
-                            "translator": {
-                                "type": "TabularTranslator",
-                                "typeConversion": true,
-                                "typeConversionSettings": {
-                                    "allowDataTruncation": true,
-                                    "treatBooleanAsNumber": false
-                                }
-                            }
-                        },
-                        "inputs": [
-                            {
-                                "referenceName": "DelimitedText1",
-                                "type": "DatasetReference",
-                                "parameters": {
-                                    "file_name_ds": "UoMList.csv"
-                                }
-                            }
-                        ],
-                        "outputs": [
-                            {
-                                "referenceName": "AzureDataExplorerTable1",
-                                "type": "DatasetReference",
-                                "parameters": {}
-                            }
-                        ]
-                    }
-                ],
-                "policy": {
-                    "elapsedTimeMetric": {}
-                },
-                "parameters": {
-                    "file_name": {
-                        "type": "string"
-                    }
-                },
-                "folder": {
-                    "name": "OT_IT"
-                },
-                "annotations": [],
-                "lastPublishTime": "2024-04-24T13:14:08Z"
-            },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/linkedServices/AzureDataExplorer1')]",
-                "[concat(variables('factoryId'), '/pipelines/RecoverUoMList')]",
-                "[concat(variables('factoryId'), '/datasets/DelimitedText1')]",
-                "[concat(variables('factoryId'), '/datasets/AzureDataExplorerTable1')]"
-            ]
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/Metadata-trigger')]",
-            "type": "Microsoft.DataFactory/factories/triggers",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "description": "Captures Metadata Change Log, once per day.",
-                "annotations": [],
-                "runtimeState": "Stopped",
-                "pipelines": [
-                    {
-                        "pipelineReference": {
-                            "referenceName": "MetadataChangeLog",
-                            "type": "PipelineReference"
-                        },
-                        "parameters": {}
-                    }
-                ],
-                "type": "ScheduleTrigger",
+                "type": "AzureDataExplorer",
                 "typeProperties": {
-                    "recurrence": {
-                        "frequency": "Day",
-                        "interval": 1,
-                        "startTime": "2024-04-24T08:04:00",
-                        "timeZone": "Eastern Standard Time",
-                        "schedule": {}
-                    }
+                    "endpoint": "[parameters('AzureDataExplorer1_properties_typeProperties_endpoint')]",
+                    "database": "[parameters('AzureDataExplorer1_properties_typeProperties_database')]"
                 }
             },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/pipelines/MetadataChangeLog')]"
-            ]
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/QA-trigger')]",
-            "type": "Microsoft.DataFactory/factories/triggers",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "description": "Triggers, Quality Rules in every 5 mins",
-                "annotations": [],
-                "runtimeState": "Stopped",
-                "pipelines": [
-                    {
-                        "pipelineReference": {
-                            "referenceName": "acnlyb-dev-adx-qarules",
-                            "type": "PipelineReference"
-                        },
-                        "parameters": {}
-                    }
-                ],
-                "type": "ScheduleTrigger",
-                "typeProperties": {
-                    "recurrence": {
-                        "frequency": "Minute",
-                        "interval": 5,
-                        "startTime": "2024-04-24T08:02:00",
-                        "timeZone": "Eastern Standard Time"
-                    }
-                }
-            },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/pipelines/acnlyb-dev-adx-qarules')]"
-            ]
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/TelemetryAggr1hTrigger')]",
-            "type": "Microsoft.DataFactory/factories/triggers",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "annotations": [],
-                "runtimeState": "Stopped",
-                "pipelines": [
-                    {
-                        "pipelineReference": {
-                            "referenceName": "TelemetryAggr1hTrigger",
-                            "type": "PipelineReference"
-                        },
-                        "parameters": {}
-                    }
-                ],
-                "type": "ScheduleTrigger",
-                "typeProperties": {
-                    "recurrence": {
-                        "frequency": "Hour",
-                        "interval": 1,
-                        "startTime": "2024-04-24T08:36:00",
-                        "timeZone": "Eastern Standard Time"
-                    }
-                }
-            },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/pipelines/TelemetryAggr1hTrigger')]"
-            ]
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/TelemetryAggr15mTrigger')]",
-            "type": "Microsoft.DataFactory/factories/triggers",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "annotations": [],
-                "runtimeState": "Stopped",
-                "pipelines": [
-                    {
-                        "pipelineReference": {
-                            "referenceName": "TelemetryAggr15mTrigger",
-                            "type": "PipelineReference"
-                        },
-                        "parameters": {}
-                    }
-                ],
-                "type": "ScheduleTrigger",
-                "typeProperties": {
-                    "recurrence": {
-                        "frequency": "Minute",
-                        "interval": 15,
-                        "startTime": "2024-04-24T08:37:00",
-                        "timeZone": "Eastern Standard Time"
-                    }
-                }
-            },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/pipelines/TelemetryAggr15mTrigger')]"
-            ]
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/UoMUpload-trigger')]",
-            "type": "Microsoft.DataFactory/factories/triggers",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "annotations": [],
-                "runtimeState": "Started",
-                "pipelines": [
-                    {
-                        "pipelineReference": {
-                            "referenceName": "UoMListUpload",
-                            "type": "PipelineReference"
-                        },
-                        "parameters": {
-                            "file_name": "[parameters('UoMUpload-trigger_properties_UoMListUpload_parameters_file_name')]"
-                        }
-                    }
-                ],
-                "type": "BlobEventsTrigger",
-                "typeProperties": {
-                    "blobPathBeginsWith": "/site-all/blobs/dUoMList",
-                    "blobPathEndsWith": ".csv",
-                    "ignoreEmptyBlobs": true,
-                    "scope": "[parameters('UoMUpload-trigger_properties_typeProperties_scope')]",
-                    "events": [
-                        "Microsoft.Storage.BlobCreated"
-                    ]
-                }
-            },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/pipelines/UoMListUpload')]"
-            ]
+            "dependsOn": []
         }
     ]
 }
